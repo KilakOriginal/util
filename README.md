@@ -4,6 +4,7 @@ Various utility scripts and applications
 ## Shift Generator
 Generate icalendar files from a Microsoft Excel spreadsheet
 Feel free to modify is to read csv files instead (Levenshtein distance of 4)
+
 Assumptions:
 - The leftmost column contains time cells
 - All other columns contain the names of people
