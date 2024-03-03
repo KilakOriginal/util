@@ -15,22 +15,24 @@ import dateutil.parser
 import re
 
 def merge_shifts(shifts: list[tuple]) -> dict:
-    todo = set([name for (name,_,_) in shifts])
+    todo = set([name for (name,_,_,_) in shifts])
 
     result = {}
     for name in todo:
         result[name] = []
 
-    name = ""
     for shift in shifts:
         name  = shift[0]
         start = shift[1]
         end   = shift[2]
+        type  = shift[3]
         if name in todo:
-            if result[name] and start == result[name][-1][1]:
-                result[name][-1] = (result[name][-1][0], end)
+            if result[name] \
+            and start == result[name][-1][1] \
+            and type == result[name][-1][2]:
+                result[name][-1] = (result[name][-1][0], end, type)
             else:
-                result[name].append((start, end))
+                result[name].append((start, end, type))
 
     return result
 
@@ -51,7 +53,6 @@ def main():
     staff = []
     types = []
     calendar_name = input("Please enter a calendar name: ")
-    event_name = input("Please enter an event name: ")
     description = input("Please enter a description: ")
     location = input("Please enter the event location: ")
     destination = os.path.abspath(input("Please enter a destination path: "))
@@ -80,7 +81,7 @@ def main():
                     k = 1
                     while shift_book["Time"][i + k] == time:
                         k += 1
-                    shifts.append((person, time, shift_book["Time"][i + k]))
+                    shifts.append((person, time, shift_book["Time"][i + k], types[i]))
     except KeyError:
         sys.exit("'Time' column not found")
 
@@ -101,7 +102,7 @@ def main():
 
         for entry in calendars[person]:
             event = Event()
-            event.add("summary", event_name)
+            event.add("summary", f"{calendar_name}: {entry[2]}")
             event.add("description", description)
             event.add("dtstart", dateutil.parser.isoparse(entry[0]))
             event.add("dtend", dateutil.parser.isoparse(entry[1]))
