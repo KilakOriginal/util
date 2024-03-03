@@ -2,7 +2,6 @@ import sys, os
 import pandas as pd
 from icalendar import Calendar, Event, vText
 import dateutil.parser
-import re
 
 def merge_shifts(shifts: list[tuple]) -> dict:
     todo = set([name for (name,_,_,_) in shifts])
@@ -16,13 +15,13 @@ def merge_shifts(shifts: list[tuple]) -> dict:
         start = shift[1]
         end   = shift[2]
         type  = shift[3]
-        if name in todo:
-            if result[name] \
-            and start == result[name][-1][1] \
-            and type == result[name][-1][2]:
-                result[name][-1] = (result[name][-1][0], end, type)
-            else:
-                result[name].append((start, end, type))
+        
+        if result[name] \
+        and start == result[name][-1][1] \
+        and type == result[name][-1][2]:
+            result[name][-1] = (result[name][-1][0], end, type)
+        else:
+            result[name].append((start, end, type))
 
     return result
 
@@ -35,19 +34,26 @@ def main():
         sys.exit(f"'{path}' is not a file.")
 
     try:
-        shift_book = pd.read_excel(path)
+        book = pd.ExcelFile(path)
+        shift_book = pd.read_excel(book, "Shifts")
     except ValueError:
         sys.exit(f"{path} is not an Excel file.")
+
+    try:
+        description_book = pd.read_excel(book, "Descriptions")
+    except ValueError:
+        print("Warning: 'Shifts' sheet not found.")
 
     shifts = []
     staff = []
     types = []
     calendar_name = input("Please enter a calendar name: ")
-    description = input("Please enter a description: ")
-    location = input("Please enter the event location: ")
     destination = os.path.abspath(input("Please enter a destination path: "))
 
-    descriptions = {} # <shift name>:<shfit description>
+    descriptions = {}
+    locations = {}
+
+    emails = {}
 
     try:
         for shift in shift_book["Shift"]:
@@ -75,6 +81,24 @@ def main():
     except KeyError:
         sys.exit("'Time' column not found")
 
+    try:
+        for (shift, description) in zip(description_book["Shift"],
+                                     description_book["Description"]):
+            descriptions[shift] = description
+    except UnboundLocalError: # Sheet not loaded
+        pass
+    except KeyError:
+        print("Warning: Unable to load shift description.")
+
+    try:
+        for (shift, location) in zip(description_book["Shift"],
+                                     description_book["Location"]):
+            locations[shift] = location
+    except UnboundLocalError: # Sheet not loaded
+        pass
+    except KeyError:
+        print("Warning: Unable to load shift location.")
+
     calendars = merge_shifts(shifts)
 
     if not os.path.exists(destination):
@@ -93,10 +117,16 @@ def main():
         for entry in calendars[person]:
             event = Event()
             event.add("summary", f"{calendar_name}: {entry[2]}")
-            event.add("description", description)
+            try:
+                event.add("description", descriptions[entry[2]])
+            except KeyError:
+                print(f"Skipping description for '{entry[2]}'...")
             event.add("dtstart", dateutil.parser.isoparse(entry[0]))
             event.add("dtend", dateutil.parser.isoparse(entry[1]))
-            event['location'] = vText(location)
+            try:
+                event['location'] = vText(locations[entry[2]])
+            except KeyError:
+                print(f"Skipping location for '{entry[2]}'...")
             calendar.add_component(event)
         
         with open(os.path.join(destination, f"{person}.ics"), "wb") as fs:

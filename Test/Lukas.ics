@@ -1,0 +1,33 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//shift-generator//https://wwww.github.com/KilakOriginal///
+NAME:Fun Overflow
+BEGIN:VEVENT
+SUMMARY:Fun Overflow: Schicht B
+DTSTART:20240305T110000
+DTEND:20240305T120000
+DESCRIPTION:Kotzschicht - Du reinigst den Boden
+LOCATION:New York City\, United States of America
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Fun Overflow: Schicht A
+DTSTART:20240305T140000
+DTEND:20240305T150000
+DESCRIPTION:Garderobe - Du hängst die Mäntel auf
+LOCATION:Kiel\, Germany
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Fun Overflow: Schicht B
+DTSTART:20240306T110000
+DTEND:20240306T120000
+DESCRIPTION:Kotzschicht - Du reinigst den Boden
+LOCATION:New York City\, United States of America
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Fun Overflow: Schicht C
+DTSTART:20240306T140000
+DTEND:20240306T150000
+DESCRIPTION:Einlass - Du kontrollierst die Ausweise
+LOCATION:London\, United Kingdom
+END:VEVENT
+END:VCALENDAR
