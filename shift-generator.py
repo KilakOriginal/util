@@ -12,6 +12,27 @@ import sys, os
 import pandas as pd
 from icalendar import Calendar, Event, vText
 import dateutil.parser
+import re
+
+def merge_shifts(shifts: list[tuple]) -> dict:
+    todo = set([name for (name,_,_) in shifts])
+
+    result = {}
+    for name in todo:
+        result[name] = []
+
+    name = ""
+    for shift in shifts:
+        name  = shift[0]
+        start = shift[1]
+        end   = shift[2]
+        if name in todo:
+            if result[name] and start == result[name][-1][1]:
+                result[name][-1] = (result[name][-1][0], end)
+            else:
+                result[name].append((start, end))
+
+    return result
 
 def main():
     if len(sys.argv) < 2:
@@ -22,39 +43,48 @@ def main():
         sys.exit(f"'{path}' is not a file.")
 
     try:
-        shifts = pd.read_excel(path)
+        shift_book = pd.read_excel(path)
     except ValueError:
         sys.exit(f"{path} is not an Excel file.")
 
-    times = [dateutil.parser.isoparse(shifts.iloc[i,0]) 
-             for i in range(len(shifts))]
-    persons = []
-    for i in range(1, shifts.shape[1]):
-        persons.append([shifts.iloc[j,i] for j in range(len(shifts))])
+    shifts = []
+    staff = []
+    types = []
     calendar_name = input("Please enter a calendar name: ")
     event_name = input("Please enter an event name: ")
     description = input("Please enter a description: ")
     location = input("Please enter the event location: ")
-    destination = os.path.abspath(input("Please enter the destination path: "))
+    destination = os.path.abspath(input("Please enter a destination path: "))
 
-    calendars = {} # name:[time]
+    descriptions = {} # <shift name>:<shfit description>
 
-    for position in persons:
-        current_person = ''
-        for i, person in enumerate(position):
-            if pd.notnull(person):
-                if person == current_person:
-                    try:
-                        calendars[person][-1] = (calendars[person][-1][0],
-                                                 times[i+1])
-                    except KeyError:
-                        calendars[person] = [(times[i], times[i+1])]
-                else:
-                    try:
-                        calendars[person].append((times[i], times[i+1]))
-                    except KeyError:
-                        calendars[person] = [(times[i], times[i+1])]
-                current_person = person
+    try:
+        for shift in shift_book["Shift"]:
+            types.append(shift)
+    except KeyError:
+        sys.exit("'Shift' column not found")
+
+    try:
+        for persons in shift_book["Staff"]:
+            if pd.notnull(persons):
+                staff.append([p.strip() for p in persons.split(",")])
+            else:
+                staff.append([])
+    except KeyError:
+        sys.exit("'Staff' column not found")
+
+    try:
+        for i, time in enumerate(shift_book["Time"]):
+            if staff[i]:
+                for person in staff[i]: # TODO: handle empty strings
+                    k = 1
+                    while shift_book["Time"][i + k] == time:
+                        k += 1
+                    shifts.append((person, time, shift_book["Time"][i + k]))
+    except KeyError:
+        sys.exit("'Time' column not found")
+
+    calendars = merge_shifts(shifts)
 
     if not os.path.exists(destination):
         try:
@@ -73,8 +103,8 @@ def main():
             event = Event()
             event.add("summary", event_name)
             event.add("description", description)
-            event.add("dtstart", entry[0])
-            event.add("dtend", entry[1])
+            event.add("dtstart", dateutil.parser.isoparse(entry[0]))
+            event.add("dtend", dateutil.parser.isoparse(entry[1]))
             event['location'] = vText(location)
             calendar.add_component(event)
         
