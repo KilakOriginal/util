@@ -13,7 +13,7 @@ def generate_overall_preferences(split_preferences: tuple[tuple, tuple]) -> list
 
 def shifts_unassigned(shifts: dict):
     for shift in shifts:
-        if shifts[shift]:
+        if any(shifts[shift]):
             return True
     return False
 
@@ -44,12 +44,9 @@ def generate_shifts(slots: dict, preferences: dict):
                 shifts[shift].append(buffer[0][1])
                 to_fill[shift] -= 1
                 person = buffer[0][1]
-                del_list = []
-                for preference in preferences[person]:
-                    if preference[1] == shift[1]:
-                        del_list.append(preference)
-                for element in del_list:
-                    preferences[person].remove(element)
+                for i, preference in enumerate(preferences[person]):
+                    if preference and preference[1] == shift[1]:
+                        preferences[person][i] = None
 
     return shifts
 
@@ -76,7 +73,6 @@ def merge_shifts(shifts: list[tuple]) -> dict:
     return result
 
 def main():
-    '''
     shifts = generate_shifts({("Shift A", ("Start a", "End a")) : 1,
                             ("Shift A", ("Start b", "End b")) : 1,
                             ("Shift B", ("Start a", "End a")) : 2},
@@ -90,8 +86,8 @@ def main():
                                         (("Start b", "End b"), ("Start a", "End a"), ("Start c", "End c")))})
     
     print(shifts)
+
     '''
-    
     if len(sys.argv) < 2:
         sys.exit(f"Usage: {sys.argv[0]} <file_name>")
 
@@ -196,7 +192,7 @@ def main():
             calendar.add_component(event)
         
         with open(os.path.join(destination, f"{person}.ics"), "wb") as fs:
-            fs.write(calendar.to_ical())
+            fs.write(calendar.to_ical())'''
 
 if __name__ == "__main__":
     main()
