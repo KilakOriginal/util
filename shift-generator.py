@@ -72,6 +72,23 @@ def merge_shifts(shifts: list[tuple]) -> dict:
 
     return result
 
+def write_master_table(destination: str, shifts: dict):
+    slots = {}
+    for shift in shifts:
+        (type,(s,e)) = shift
+        try:
+            slots[type].append((s,e,', '.join(shifts[shift])))
+        except KeyError:
+            slots[type] = [(s,e,', '.join(shifts[shift]))]
+
+    sheets = []
+    for slot in slots:
+        sheets.append((slot, pd.DataFrame([[s,e,n] for (s,e,n) in slots[slot]], columns=["Starts", "Ends", "Staff"])))
+    
+    with pd.ExcelWriter(destination) as writer:
+        for (sheet, df) in sheets:
+            df.to_excel(writer, sheet_name=sheet)
+
 def main():
     shifts = generate_shifts({("Shift A", ("Start a", "End a")) : 1,
                             ("Shift A", ("Start b", "End b")) : 1,
@@ -85,7 +102,10 @@ def main():
                             "Sophie" : (("Shift A", "Shift B", "Shift C"),
                                         (("Start b", "End b"), ("Start a", "End a"), ("Start c", "End c")))})
     
-    print(shifts)
+    #print(shifts)
+    write_master_table("C:/MEGA/Code/Util/tests/auto.xlsx", shifts)
+
+    # TODO: Write master shift table (excel file) and split shifts up by name to generate individual ical files
 
     '''
     if len(sys.argv) < 2:
