@@ -104,24 +104,25 @@ def split_staff_tables(shifts: dict) -> dict:
     return result
 
 def main():
-    shifts = generate_shifts({("Shift A", ("Start a", "End a")) : 1,
-                            ("Shift A", ("Start b", "End b")) : 1,
-                            ("Shift B", ("Start a", "End a")) : 2},
-                            {"Malik" : (("Shift A", "Shift B", "Shift C"),
-                                        (("Start a", "End a"), ("Start b", "End b"), ("Start c", "End c"))),
-                            "Bert" : (("Shift A", "Shift B", "Shift C"),
-                                      (("Start a", "End a"), ("Start b", "End b"), ("Start c", "End c"))),
-                            "Lara" : (("Shift A", "Shift B", "Shift C"),
-                                        (("Start b", "End b"), ("Start a", "End a"), ("Start c", "End c"))),
-                            "Sophie" : (("Shift A", "Shift B", "Shift C"),
-                                        (("Start b", "End b"), ("Start a", "End a"), ("Start c", "End c")))})
+    s1 = "2024-03-05T08:00+01:00"
+    e1 = "2024-03-05T09:00+01:00"
+    s2 = "2024-03-05T10:00+01:00"
+    e2 = "2024-03-05T11:00+01:00"
+    s3 = "2024-03-06T10:00+01:00"
+    e3 = "2024-03-06T11:00+01:00"
     
-    #write_master_table("C:/MEGA/Code/Util/tests/auto.xlsx", shifts)
-    print(split_staff_tables(shifts))
+    shifts = generate_shifts({("Bar", (s1, e1)) : 1,
+                            ("Bar", (s2, e2)) : 1,
+                            ("Einlass", (s1, e1)) : 2},
+                            {"Malik" : (("Bar", "Einlass", "Garderobe"),
+                                        ((s1, e1), (s2, e2), (s3, e3))),
+                            "Bert" : (("Bar", "Einlass", "Garderobe"),
+                                      ((s1, e1), (s2, e2), (s3, e3))),
+                            "Lara" : (("Einlass", "Bar", "Garderobe"),
+                                        ((s2, e2), (s1, e1), (s3, e3))),
+                            "Sophie" : (("Garderobe", "Bar", "Einlass"),
+                                        ((s2, e2), (s1, e1), (s3, e3)))})
 
-    # TODO: Write master shift table (excel file) and split shifts up by name to generate individual ical files
-
-    '''
     if len(sys.argv) < 2:
         sys.exit(f"Usage: {sys.argv[0]} <file_name>")
 
@@ -140,9 +141,6 @@ def main():
     except ValueError:
         print("Warning: 'Shifts' sheet not found.")
 
-    shifts = []
-    staff = []
-    types = []
     calendar_name = input("Please enter a calendar name: ")
     destination = os.path.abspath(input("Please enter a destination path: "))
 
@@ -150,32 +148,6 @@ def main():
     locations = {}
 
     emails = {}
-
-    try:
-        for shift in shift_book["Shift"]:
-            types.append(shift)
-    except KeyError:
-        sys.exit("'Shift' column not found")
-
-    try:
-        for persons in shift_book["Staff"]:
-            if pd.notnull(persons):
-                staff.append([p.strip() for p in persons.split(",")])
-            else:
-                staff.append([])
-    except KeyError:
-        sys.exit("'Staff' column not found")
-
-    try:
-        for i, time in enumerate(shift_book["Time"]):
-            if staff[i]:
-                for person in staff[i]: # TODO: handle empty strings
-                    k = 1
-                    while shift_book["Time"][i + k] == time:
-                        k += 1
-                    shifts.append((person, time, shift_book["Time"][i + k], types[i]))
-    except KeyError:
-        sys.exit("'Time' column not found")
 
     try:
         for (shift, description) in zip(description_book["Shift"],
@@ -195,13 +167,15 @@ def main():
     except KeyError:
         print("Warning: Unable to load shift location.")
 
-    calendars = merge_shifts(shifts)
+    calendars = split_staff_tables(shifts)
 
     if not os.path.exists(destination):
         try:
             os.mkdir(destination)
         except Exception as e:
             sys.exit(f"Unable to create directory ({e})")
+
+    write_master_table(os.path.join(destination, "auto.xlsx"), shifts)
 
     for person in calendars:
         calendar = Calendar()
@@ -226,7 +200,7 @@ def main():
             calendar.add_component(event)
         
         with open(os.path.join(destination, f"{person}.ics"), "wb") as fs:
-            fs.write(calendar.to_ical())'''
+            fs.write(calendar.to_ical())
 
 if __name__ == "__main__":
     main()

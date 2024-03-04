@@ -1,0 +1,12 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//shift-generator//https://wwww.github.com/KilakOriginal///
+NAME:Fun Overflow
+BEGIN:VEVENT
+SUMMARY:Fun Overflow: Einlass
+DTSTART:20240305T080000
+DTEND:20240305T090000
+DESCRIPTION:Einlass - Du kontrollierst die Ausweise
+LOCATION:London\, United Kingdom
+END:VEVENT
+END:VCALENDAR
