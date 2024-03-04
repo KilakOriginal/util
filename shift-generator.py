@@ -87,7 +87,7 @@ def write_master_table(destination: str, shifts: dict):
     
     with pd.ExcelWriter(destination) as writer:
         for (sheet, df) in sheets:
-            df.to_excel(writer, sheet_name=sheet)
+            df.to_excel(writer, sheet_name=sheet, index=False)
 
 def main():
     shifts = generate_shifts({("Shift A", ("Start a", "End a")) : 1,
