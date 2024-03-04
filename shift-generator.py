@@ -83,6 +83,7 @@ def write_master_table(destination: str, shifts: dict):
 
     sheets = []
     for slot in slots:
+        slots[slot].sort(key=lambda x: x[0])
         sheets.append((slot, pd.DataFrame([[s,e,n] for (s,e,n) in slots[slot]], columns=["Starts", "Ends", "Staff"])))
     
     with pd.ExcelWriter(destination) as writer:
