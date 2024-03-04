@@ -90,6 +90,19 @@ def write_master_table(destination: str, shifts: dict):
         for (sheet, df) in sheets:
             df.to_excel(writer, sheet_name=sheet, index=False)
 
+def split_staff_tables(shifts: dict) -> dict:
+    result = {}
+
+    for shift in shifts:
+        for staff in shifts[shift]:
+            (t,(s,e)) = shift
+            try:
+                result[staff].append((s,e,t))
+            except KeyError:
+                result[staff] = [(s,e,t)]
+
+    return result
+
 def main():
     shifts = generate_shifts({("Shift A", ("Start a", "End a")) : 1,
                             ("Shift A", ("Start b", "End b")) : 1,
@@ -103,8 +116,8 @@ def main():
                             "Sophie" : (("Shift A", "Shift B", "Shift C"),
                                         (("Start b", "End b"), ("Start a", "End a"), ("Start c", "End c")))})
     
-    #print(shifts)
-    write_master_table("C:/MEGA/Code/Util/tests/auto.xlsx", shifts)
+    #write_master_table("C:/MEGA/Code/Util/tests/auto.xlsx", shifts)
+    print(split_staff_tables(shifts))
 
     # TODO: Write master shift table (excel file) and split shifts up by name to generate individual ical files
 
