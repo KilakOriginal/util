@@ -2,6 +2,56 @@ import sys, os
 import pandas as pd
 from icalendar import Calendar, Event, vText
 import dateutil.parser
+import operator
+
+def generate_overall_preferences(split_preferences: tuple[tuple, tuple]) -> list:
+    preferences = []
+    for y in split_preferences[1]:
+        for x in split_preferences[0]:
+            preferences.append((x,y))
+    return preferences
+
+def shifts_unassigned(shifts: dict):
+    for shift in shifts:
+        if shifts[shift]:
+            return True
+    return False
+
+def slots_free(shifts: dict):
+    for shift in shifts:
+        if shifts[shift] > 0:
+            return True
+    return False
+
+def generate_shifts(slots: dict, preferences: dict):
+    for key in preferences:
+        preferences[key] = generate_overall_preferences(preferences[key])
+
+    to_fill = dict(sorted(slots.items(), key=operator.itemgetter(1), reverse=True))
+    shifts = {}
+
+    for slot in to_fill:
+        shifts[slot] = []
+
+    while shifts_unassigned(preferences) and slots_free(to_fill):
+        for shift in to_fill:
+            buffer = []
+            for person in preferences:
+                if shift in preferences[person]:
+                    buffer.append((preferences[person].index(shift), person))
+            buffer.sort(key=lambda x: x[0])
+            if buffer:
+                shifts[shift].append(buffer[0][1])
+                to_fill[shift] -= 1
+                person = buffer[0][1]
+                del_list = []
+                for preference in preferences[person]:
+                    if preference[1] == shift[1]:
+                        del_list.append(preference)
+                for element in del_list:
+                    preferences[person].remove(element)
+
+    return shifts
 
 def merge_shifts(shifts: list[tuple]) -> dict:
     todo = set([name for (name,_,_,_) in shifts])
@@ -26,6 +76,22 @@ def merge_shifts(shifts: list[tuple]) -> dict:
     return result
 
 def main():
+    '''
+    shifts = generate_shifts({("Shift A", ("Start a", "End a")) : 1,
+                            ("Shift A", ("Start b", "End b")) : 1,
+                            ("Shift B", ("Start a", "End a")) : 2},
+                            {"Malik" : (("Shift A", "Shift B", "Shift C"),
+                                        (("Start a", "End a"), ("Start b", "End b"), ("Start c", "End c"))),
+                            "Bert" : (("Shift A", "Shift B", "Shift C"),
+                                      (("Start a", "End a"), ("Start b", "End b"), ("Start c", "End c"))),
+                            "Lara" : (("Shift A", "Shift B", "Shift C"),
+                                        (("Start b", "End b"), ("Start a", "End a"), ("Start c", "End c"))),
+                            "Sophie" : (("Shift A", "Shift B", "Shift C"),
+                                        (("Start b", "End b"), ("Start a", "End a"), ("Start c", "End c")))})
+    
+    print(shifts)
+    '''
+    
     if len(sys.argv) < 2:
         sys.exit(f"Usage: {sys.argv[0]} <file_name>")
 
