@@ -2,6 +2,9 @@
 Various utility scripts and applications
 
 ## Shift Generator
+> [!WARNING]
+> Outdated
+
 Generate icalendar files from a Microsoft Excel spreadsheet
 Feel free to modify is to read csv files instead (Levenshtein distance of 4)
 
