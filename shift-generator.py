@@ -1,15 +1,19 @@
-import sys, os
+import sys
+import os
 import pandas as pd
 from icalendar import Calendar, Event, vText
 import dateutil.parser
 import operator
 
-def generate_overall_preferences(split_preferences: tuple[tuple, tuple]) -> list:
+
+def generate_overall_preferences(split_preferences:
+                                 tuple[tuple, tuple]) -> list:
     preferences = []
     for y in split_preferences[1]:
         for x in split_preferences[0]:
-            preferences.append((x,y))
+            preferences.append((x, y))
     return preferences
+
 
 def shifts_unassigned(shifts: dict):
     for shift in shifts:
@@ -17,17 +21,22 @@ def shifts_unassigned(shifts: dict):
             return True
     return False
 
+
 def slots_free(shifts: dict):
     for shift in shifts:
         if shifts[shift] > 0:
             return True
     return False
 
+
 def generate_shifts(slots: dict, preferences: dict):
     for key in preferences:
-        preferences[key] = generate_overall_preferences(preferences[key])
+        preferences[key] = sorted(generate_overall_preferences(preferences[key]),
+                                  key=lambda x: len(x))
 
-    to_fill = dict(sorted(slots.items(), key=operator.itemgetter(1), reverse=True))
+    to_fill = dict(sorted(slots.items(),
+                          key=operator.itemgetter(1),
+                          reverse=True))
     shifts = {}
 
     for slot in to_fill:
@@ -50,8 +59,9 @@ def generate_shifts(slots: dict, preferences: dict):
 
     return shifts
 
+
 def merge_shifts(shifts: list[tuple]) -> dict:
-    todo = set([name for (name,_,_,_) in shifts])
+    todo = set([name for (name, _, _, _) in shifts])
 
     result = {}
     for name in todo:
@@ -62,7 +72,7 @@ def merge_shifts(shifts: list[tuple]) -> dict:
         start = shift[1]
         end   = shift[2]
         type  = shift[3]
-        
+
         if result[name] \
         and start == result[name][-1][1] \
         and type == result[name][-1][2]:
@@ -72,36 +82,41 @@ def merge_shifts(shifts: list[tuple]) -> dict:
 
     return result
 
+
 def write_master_table(destination: str, shifts: dict):
     slots = {}
     for shift in shifts:
-        (type,(s,e)) = shift
+        (type, (s, e)) = shift
         try:
-            slots[type].append((s,e,', '.join(shifts[shift])))
+            slots[type].append((s, e, ', '.join(shifts[shift])))
         except KeyError:
-            slots[type] = [(s,e,', '.join(shifts[shift]))]
+            slots[type] = [(s, e, ', '.join(shifts[shift]))]
 
     sheets = []
     for slot in slots:
         slots[slot].sort(key=lambda x: x[0])
-        sheets.append((slot, pd.DataFrame([[s,e,n] for (s,e,n) in slots[slot]], columns=["Starts", "Ends", "Staff"])))
-    
+        sheets.append((slot,
+                       pd.DataFrame([[s, e, n] for (s, e, n) in slots[slot]],
+                                    columns=["Starts", "Ends", "Staff"])))
+
     with pd.ExcelWriter(destination) as writer:
         for (sheet, df) in sheets:
             df.to_excel(writer, sheet_name=sheet, index=False)
+
 
 def split_staff_tables(shifts: dict) -> dict:
     result = {}
 
     for shift in shifts:
         for staff in shifts[shift]:
-            (t,(s,e)) = shift
+            (t, (s, e)) = shift
             try:
-                result[staff].append((s,e,t))
+                result[staff].append((s, e, t))
             except KeyError:
-                result[staff] = [(s,e,t)]
+                result[staff] = [(s, e, t)]
 
     return result
+
 
 def main():
     s1 = "2024-03-05T08:00+01:00"
@@ -153,7 +168,7 @@ def main():
         for (shift, description) in zip(description_book["Shift"],
                                      description_book["Description"]):
             descriptions[shift] = description
-    except UnboundLocalError: # Sheet not loaded
+    except UnboundLocalError:  # Sheet not loaded
         pass
     except KeyError:
         print("Warning: Unable to load shift description.")
@@ -162,7 +177,7 @@ def main():
         for (shift, location) in zip(description_book["Shift"],
                                      description_book["Location"]):
             locations[shift] = location
-    except UnboundLocalError: # Sheet not loaded
+    except UnboundLocalError:  # Sheet not loaded
         pass
     except KeyError:
         print("Warning: Unable to load shift location.")
@@ -180,7 +195,8 @@ def main():
     for person in calendars:
         calendar = Calendar()
 
-        calendar.add("prodid", "-//shift-generator//https://wwww.github.com/KilakOriginal///")
+        calendar.add("prodid",
+                     "-//shift-generator//https://wwww.github.com/KilakOriginal///")
         calendar.add("version", "2.0")
         calendar.add("name", calendar_name)
 
@@ -201,6 +217,7 @@ def main():
         
         with open(os.path.join(destination, f"{person}.ics"), "wb") as fs:
             fs.write(calendar.to_ical())
+
 
 if __name__ == "__main__":
     main()
